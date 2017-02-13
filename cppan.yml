@@ -29,17 +29,18 @@ projects:
 
         post_sources: |
             function(compile_flatbuffers_schema_to_cpp SRC_FBS)
-              string(REGEX REPLACE "\\.fbs$" "_generated.h" GEN_HEADER ${SRC_FBS})
+              get_filename_component(v ${SRC_FBS} NAME)
+              string(REGEX REPLACE "\\.fbs$" "_generated.h" GEN_HEADER ${v})
               add_custom_command(
-                OUTPUT ${GEN_HEADER}
+                OUTPUT ${BDIR}/protocol/${GEN_HEADER}
                 COMMAND pvt.cppan.demo.google.flatbuffers.flatc -c --no-includes --gen-mutable
-                        --gen-object-api -o "${SDIR}"
+                        --gen-object-api -o "${BDIR}/protocol/"
                         "${SRC_FBS}"
                 DEPENDS pvt.cppan.demo.google.flatbuffers.flatc)
             endfunction()
 
             compile_flatbuffers_schema_to_cpp(${SDIR}/code/protocol/protocol.fbs)
-            set(src ${src} ${SDIR}/code/protocol/protocol_generated.h)
+            set(src ${src} ${BDIR}/protocol/protocol_generated.h)
 
     fts_remote_console:
         files:
