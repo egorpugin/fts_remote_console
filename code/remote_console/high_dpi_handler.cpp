@@ -11,7 +11,7 @@
 #include "high_dpi_handler.h"
 
 // thirdparty libs
-#include <imgui/imgui.h>
+#include <imgui.h>
 
 // platform
 #ifdef FTS_WINDOWS

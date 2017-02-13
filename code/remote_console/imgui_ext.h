@@ -12,7 +12,7 @@
 #define FTS_IMGUI_EXT_H
 
 // thirdparty libs
-#include <imgui/imgui.h>
+#include <imgui.h>
 
 // lang
 #include <climits>

@@ -12,7 +12,7 @@
 
 
 // thirdparty
-#include <asio/asio.hpp>
+#include <asio.hpp>
 
 // lang
 #include <deque>

@@ -19,7 +19,7 @@ ProtocolMessage::ProtocolMessage(uint8_t const * data, size_t size)
 {
 }
 
-ProtocolMessage::ProtocolMessage(ProtocolMessage && msg) 
+ProtocolMessage::ProtocolMessage(ProtocolMessage && msg)
     : _buffer(std::move(msg._buffer))
     , _msg(msg._msg)
 {
@@ -30,7 +30,7 @@ bool ProtocolMessage::empty() const {
 }
 
 fts::Data ProtocolMessage::type() const {
-    return !empty() ? _msg->data_type() : fts::Data::NONE;
+    return !empty() ? _msg->data_type() : fts::Data_NONE;
 }
 
 uint8_t const * ProtocolMessage::data() const {
@@ -42,15 +42,15 @@ size_t ProtocolMessage::size() const {
 }
 
 fts::LogEntry const * ProtocolMessage::asLogEntry() const {
-    return (type() == fts::Data::LogEntry) ? static_cast<const fts::LogEntry *>(_msg->data()) : nullptr;
+    return (type() == fts::Data_LogEntry) ? static_cast<const fts::LogEntry *>(_msg->data()) : nullptr;
 }
 
 fts::GameInfoBroadcast const * ProtocolMessage::asGameInfoBroadcast() const {
-    return (type() == fts::Data::GameInfoBroadcast) ? static_cast<const fts::GameInfoBroadcast *>(_msg->data()) : nullptr;
+    return (type() == fts::Data_GameInfoBroadcast) ? static_cast<const fts::GameInfoBroadcast *>(_msg->data()) : nullptr;
 }
 
 fts::GameServerLogInterval const * ProtocolMessage::asGameServerLogInterval() const {
-    return (type() == fts::Data::GameServerLogInterval) ? static_cast<const fts::GameServerLogInterval *>(_msg->data()) : nullptr;
+    return (type() == fts::Data_GameServerLogInterval) ? static_cast<const fts::GameServerLogInterval *>(_msg->data()) : nullptr;
 }
 
 

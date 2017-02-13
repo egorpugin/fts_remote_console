@@ -8,20 +8,24 @@
 namespace fts {
 
 struct LogEntry;
+struct LogEntryT;
 
 struct GameInfoBroadcast;
+struct GameInfoBroadcastT;
 
 struct GameServerLogInterval;
+struct GameServerLogIntervalT;
 
 struct Message;
+struct MessageT;
 
-enum class Data : uint8_t {
-  NONE = 0,
-  LogEntry = 1,
-  GameInfoBroadcast = 2,
-  GameServerLogInterval = 3,
-  MIN = NONE,
-  MAX = GameServerLogInterval
+enum Data {
+  Data_NONE = 0,
+  Data_LogEntry = 1,
+  Data_GameInfoBroadcast = 2,
+  Data_GameServerLogInterval = 3,
+  Data_MIN = Data_NONE,
+  Data_MAX = Data_GameServerLogInterval
 };
 
 inline const char **EnumNamesData() {
@@ -32,32 +36,72 @@ inline const char **EnumNamesData() {
 inline const char *EnumNameData(Data e) { return EnumNamesData()[static_cast<int>(e)]; }
 
 template<typename T> struct DataTraits {
-  static const Data enum_value = Data::NONE;
+  static const Data enum_value = Data_NONE;
 };
 
 template<> struct DataTraits<LogEntry> {
-  static const Data enum_value = Data::LogEntry;
+  static const Data enum_value = Data_LogEntry;
 };
 
 template<> struct DataTraits<GameInfoBroadcast> {
-  static const Data enum_value = Data::GameInfoBroadcast;
+  static const Data enum_value = Data_GameInfoBroadcast;
 };
 
 template<> struct DataTraits<GameServerLogInterval> {
-  static const Data enum_value = Data::GameServerLogInterval;
+  static const Data enum_value = Data_GameServerLogInterval;
+};
+
+struct DataUnion {
+  Data type;
+
+  flatbuffers::NativeTable *table;
+  DataUnion() : type(Data_NONE), table(nullptr) {}
+  DataUnion(const DataUnion &);
+  DataUnion &operator=(const DataUnion &);
+  ~DataUnion() { Reset(); }
+  void Reset();
+
+  template <typename T>
+  void Set(T&& value) {
+    Reset();
+    type = DataTraits<typename T::TableType>::enum_value;
+    if (type != Data_NONE) {
+      table = new T(std::forward<T>(value));
+    }
+  }
+
+  static flatbuffers::NativeTable *UnPack(const void *union_obj, Data type, const flatbuffers::resolver_function_t *resolver);
+  flatbuffers::Offset<void> Pack(flatbuffers::FlatBufferBuilder &_fbb, const flatbuffers::rehasher_function_t *rehasher = nullptr) const;
+
+  LogEntryT *AsLogEntry() { return type == Data_LogEntry ? reinterpret_cast<LogEntryT *>(table) : nullptr; }
+  GameInfoBroadcastT *AsGameInfoBroadcast() { return type == Data_GameInfoBroadcast ? reinterpret_cast<GameInfoBroadcastT *>(table) : nullptr; }
+  GameServerLogIntervalT *AsGameServerLogInterval() { return type == Data_GameServerLogInterval ? reinterpret_cast<GameServerLogIntervalT *>(table) : nullptr; }
 };
 
 inline bool VerifyData(flatbuffers::Verifier &verifier, const void *union_obj, Data type);
 
+struct LogEntryT : public flatbuffers::NativeTable {
+  typedef LogEntry TableType;
+  float time;
+  std::string category;
+  std::string message;
+  LogEntryT()
+    : time(0.0f) {}
+};
+
 struct LogEntry FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef LogEntryT NativeTableType;
   enum {
     VT_TIME = 4,
     VT_CATEGORY = 6,
     VT_MESSAGE = 8
   };
   float time() const { return GetField<float>(VT_TIME, 0.0f); }
+  bool mutate_time(float _time) { return SetField(VT_TIME, _time); }
   const flatbuffers::String *category() const { return GetPointer<const flatbuffers::String *>(VT_CATEGORY); }
+  flatbuffers::String *mutable_category() { return GetPointer<flatbuffers::String *>(VT_CATEGORY); }
   const flatbuffers::String *message() const { return GetPointer<const flatbuffers::String *>(VT_MESSAGE); }
+  flatbuffers::String *mutable_message() { return GetPointer<flatbuffers::String *>(VT_MESSAGE); }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<float>(verifier, VT_TIME) &&
@@ -67,6 +111,8 @@ struct LogEntry FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.Verify(message()) &&
            verifier.EndTable();
   }
+  LogEntryT *UnPack(const flatbuffers::resolver_function_t *resolver = nullptr) const;
+  static flatbuffers::Offset<LogEntry> Pack(flatbuffers::FlatBufferBuilder &_fbb, const LogEntryT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
 struct LogEntryBuilder {
@@ -101,7 +147,21 @@ inline flatbuffers::Offset<LogEntry> CreateLogEntryDirect(flatbuffers::FlatBuffe
   return CreateLogEntry(_fbb, time, category ? _fbb.CreateString(category) : 0, message ? _fbb.CreateString(message) : 0);
 }
 
+inline flatbuffers::Offset<LogEntry> CreateLogEntry(flatbuffers::FlatBufferBuilder &_fbb, const LogEntryT *_o, const flatbuffers::rehasher_function_t *rehasher = nullptr);
+
+struct GameInfoBroadcastT : public flatbuffers::NativeTable {
+  typedef GameInfoBroadcast TableType;
+  std::string ipaddr;
+  int32_t port;
+  std::string hostname;
+  int32_t processid;
+  GameInfoBroadcastT()
+    : port(0),
+      processid(0) {}
+};
+
 struct GameInfoBroadcast FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef GameInfoBroadcastT NativeTableType;
   enum {
     VT_IPADDR = 4,
     VT_PORT = 6,
@@ -109,9 +169,13 @@ struct GameInfoBroadcast FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_PROCESSID = 10
   };
   const flatbuffers::String *ipaddr() const { return GetPointer<const flatbuffers::String *>(VT_IPADDR); }
+  flatbuffers::String *mutable_ipaddr() { return GetPointer<flatbuffers::String *>(VT_IPADDR); }
   int32_t port() const { return GetField<int32_t>(VT_PORT, 0); }
+  bool mutate_port(int32_t _port) { return SetField(VT_PORT, _port); }
   const flatbuffers::String *hostname() const { return GetPointer<const flatbuffers::String *>(VT_HOSTNAME); }
+  flatbuffers::String *mutable_hostname() { return GetPointer<flatbuffers::String *>(VT_HOSTNAME); }
   int32_t processid() const { return GetField<int32_t>(VT_PROCESSID, 0); }
+  bool mutate_processid(int32_t _processid) { return SetField(VT_PROCESSID, _processid); }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<flatbuffers::uoffset_t>(verifier, VT_IPADDR) &&
@@ -122,6 +186,8 @@ struct GameInfoBroadcast FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<int32_t>(verifier, VT_PROCESSID) &&
            verifier.EndTable();
   }
+  GameInfoBroadcastT *UnPack(const flatbuffers::resolver_function_t *resolver = nullptr) const;
+  static flatbuffers::Offset<GameInfoBroadcast> Pack(flatbuffers::FlatBufferBuilder &_fbb, const GameInfoBroadcastT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
 struct GameInfoBroadcastBuilder {
@@ -160,16 +226,29 @@ inline flatbuffers::Offset<GameInfoBroadcast> CreateGameInfoBroadcastDirect(flat
   return CreateGameInfoBroadcast(_fbb, ipaddr ? _fbb.CreateString(ipaddr) : 0, port, hostname ? _fbb.CreateString(hostname) : 0, processid);
 }
 
+inline flatbuffers::Offset<GameInfoBroadcast> CreateGameInfoBroadcast(flatbuffers::FlatBufferBuilder &_fbb, const GameInfoBroadcastT *_o, const flatbuffers::rehasher_function_t *rehasher = nullptr);
+
+struct GameServerLogIntervalT : public flatbuffers::NativeTable {
+  typedef GameServerLogInterval TableType;
+  float interval;
+  GameServerLogIntervalT()
+    : interval(0.0f) {}
+};
+
 struct GameServerLogInterval FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef GameServerLogIntervalT NativeTableType;
   enum {
     VT_INTERVAL = 4
   };
   float interval() const { return GetField<float>(VT_INTERVAL, 0.0f); }
+  bool mutate_interval(float _interval) { return SetField(VT_INTERVAL, _interval); }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<float>(verifier, VT_INTERVAL) &&
            verifier.EndTable();
   }
+  GameServerLogIntervalT *UnPack(const flatbuffers::resolver_function_t *resolver = nullptr) const;
+  static flatbuffers::Offset<GameServerLogInterval> Pack(flatbuffers::FlatBufferBuilder &_fbb, const GameServerLogIntervalT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
 struct GameServerLogIntervalBuilder {
@@ -191,13 +270,24 @@ inline flatbuffers::Offset<GameServerLogInterval> CreateGameServerLogInterval(fl
   return builder_.Finish();
 }
 
+inline flatbuffers::Offset<GameServerLogInterval> CreateGameServerLogInterval(flatbuffers::FlatBufferBuilder &_fbb, const GameServerLogIntervalT *_o, const flatbuffers::rehasher_function_t *rehasher = nullptr);
+
+struct MessageT : public flatbuffers::NativeTable {
+  typedef Message TableType;
+  DataUnion data;
+  MessageT() {}
+};
+
 struct Message FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef MessageT NativeTableType;
   enum {
     VT_DATA_TYPE = 4,
     VT_DATA = 6
   };
   Data data_type() const { return static_cast<Data>(GetField<uint8_t>(VT_DATA_TYPE, 0)); }
+  bool mutate_data_type(Data _data_type) { return SetField(VT_DATA_TYPE, static_cast<uint8_t>(_data_type)); }
   const void *data() const { return GetPointer<const void *>(VT_DATA); }
+  void *mutable_data() { return GetPointer<void *>(VT_DATA); }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint8_t>(verifier, VT_DATA_TYPE) &&
@@ -205,6 +295,8 @@ struct Message FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyData(verifier, data(), data_type()) &&
            verifier.EndTable();
   }
+  MessageT *UnPack(const flatbuffers::resolver_function_t *resolver = nullptr) const;
+  static flatbuffers::Offset<Message> Pack(flatbuffers::FlatBufferBuilder &_fbb, const MessageT* _o, const flatbuffers::rehasher_function_t *_rehasher = nullptr);
 };
 
 struct MessageBuilder {
@@ -221,7 +313,7 @@ struct MessageBuilder {
 };
 
 inline flatbuffers::Offset<Message> CreateMessage(flatbuffers::FlatBufferBuilder &_fbb,
-    Data data_type = Data::NONE,
+    Data data_type = Data_NONE,
     flatbuffers::Offset<void> data = 0) {
   MessageBuilder builder_(_fbb);
   builder_.add_data(data);
@@ -229,18 +321,135 @@ inline flatbuffers::Offset<Message> CreateMessage(flatbuffers::FlatBufferBuilder
   return builder_.Finish();
 }
 
+inline flatbuffers::Offset<Message> CreateMessage(flatbuffers::FlatBufferBuilder &_fbb, const MessageT *_o, const flatbuffers::rehasher_function_t *rehasher = nullptr);
+
+inline LogEntryT *LogEntry::UnPack(const flatbuffers::resolver_function_t *resolver) const {
+  (void)resolver;
+  auto _o = new LogEntryT();
+  { auto _e = time(); _o->time = _e; };
+  { auto _e = category(); if (_e) _o->category = _e->str(); };
+  { auto _e = message(); if (_e) _o->message = _e->str(); };
+  return _o;
+}
+
+inline flatbuffers::Offset<LogEntry> LogEntry::Pack(flatbuffers::FlatBufferBuilder &_fbb, const LogEntryT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateLogEntry(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<LogEntry> CreateLogEntry(flatbuffers::FlatBufferBuilder &_fbb, const LogEntryT *_o, const flatbuffers::rehasher_function_t *rehasher) {
+  (void)rehasher;
+  return CreateLogEntry(_fbb,
+    _o->time,
+    _o->category.size() ? _fbb.CreateString(_o->category) : 0,
+    _o->message.size() ? _fbb.CreateString(_o->message) : 0);
+}
+
+inline GameInfoBroadcastT *GameInfoBroadcast::UnPack(const flatbuffers::resolver_function_t *resolver) const {
+  (void)resolver;
+  auto _o = new GameInfoBroadcastT();
+  { auto _e = ipaddr(); if (_e) _o->ipaddr = _e->str(); };
+  { auto _e = port(); _o->port = _e; };
+  { auto _e = hostname(); if (_e) _o->hostname = _e->str(); };
+  { auto _e = processid(); _o->processid = _e; };
+  return _o;
+}
+
+inline flatbuffers::Offset<GameInfoBroadcast> GameInfoBroadcast::Pack(flatbuffers::FlatBufferBuilder &_fbb, const GameInfoBroadcastT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateGameInfoBroadcast(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<GameInfoBroadcast> CreateGameInfoBroadcast(flatbuffers::FlatBufferBuilder &_fbb, const GameInfoBroadcastT *_o, const flatbuffers::rehasher_function_t *rehasher) {
+  (void)rehasher;
+  return CreateGameInfoBroadcast(_fbb,
+    _o->ipaddr.size() ? _fbb.CreateString(_o->ipaddr) : 0,
+    _o->port,
+    _o->hostname.size() ? _fbb.CreateString(_o->hostname) : 0,
+    _o->processid);
+}
+
+inline GameServerLogIntervalT *GameServerLogInterval::UnPack(const flatbuffers::resolver_function_t *resolver) const {
+  (void)resolver;
+  auto _o = new GameServerLogIntervalT();
+  { auto _e = interval(); _o->interval = _e; };
+  return _o;
+}
+
+inline flatbuffers::Offset<GameServerLogInterval> GameServerLogInterval::Pack(flatbuffers::FlatBufferBuilder &_fbb, const GameServerLogIntervalT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateGameServerLogInterval(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<GameServerLogInterval> CreateGameServerLogInterval(flatbuffers::FlatBufferBuilder &_fbb, const GameServerLogIntervalT *_o, const flatbuffers::rehasher_function_t *rehasher) {
+  (void)rehasher;
+  return CreateGameServerLogInterval(_fbb,
+    _o->interval);
+}
+
+inline MessageT *Message::UnPack(const flatbuffers::resolver_function_t *resolver) const {
+  (void)resolver;
+  auto _o = new MessageT();
+  { auto _e = data_type(); _o->data.type = _e; };
+  { auto _e = data(); if (_e) _o->data.table = DataUnion::UnPack(_e, data_type(), resolver); };
+  return _o;
+}
+
+inline flatbuffers::Offset<Message> Message::Pack(flatbuffers::FlatBufferBuilder &_fbb, const MessageT* _o, const flatbuffers::rehasher_function_t *_rehasher) {
+  return CreateMessage(_fbb, _o, _rehasher);
+}
+
+inline flatbuffers::Offset<Message> CreateMessage(flatbuffers::FlatBufferBuilder &_fbb, const MessageT *_o, const flatbuffers::rehasher_function_t *rehasher) {
+  (void)rehasher;
+  return CreateMessage(_fbb,
+    _o->data.type,
+    _o->data.Pack(_fbb));
+}
+
 inline bool VerifyData(flatbuffers::Verifier &verifier, const void *union_obj, Data type) {
   switch (type) {
-    case Data::NONE: return true;
-    case Data::LogEntry: return verifier.VerifyTable(reinterpret_cast<const LogEntry *>(union_obj));
-    case Data::GameInfoBroadcast: return verifier.VerifyTable(reinterpret_cast<const GameInfoBroadcast *>(union_obj));
-    case Data::GameServerLogInterval: return verifier.VerifyTable(reinterpret_cast<const GameServerLogInterval *>(union_obj));
+    case Data_NONE: return true;
+    case Data_LogEntry: return verifier.VerifyTable(reinterpret_cast<const LogEntry *>(union_obj));
+    case Data_GameInfoBroadcast: return verifier.VerifyTable(reinterpret_cast<const GameInfoBroadcast *>(union_obj));
+    case Data_GameServerLogInterval: return verifier.VerifyTable(reinterpret_cast<const GameServerLogInterval *>(union_obj));
     default: return false;
   }
 }
 
+inline flatbuffers::NativeTable *DataUnion::UnPack(const void *union_obj, Data type, const flatbuffers::resolver_function_t *resolver) {
+  switch (type) {
+    case Data_NONE: return nullptr;
+    case Data_LogEntry: return reinterpret_cast<const LogEntry *>(union_obj)->UnPack(resolver);
+    case Data_GameInfoBroadcast: return reinterpret_cast<const GameInfoBroadcast *>(union_obj)->UnPack(resolver);
+    case Data_GameServerLogInterval: return reinterpret_cast<const GameServerLogInterval *>(union_obj)->UnPack(resolver);
+    default: return nullptr;
+  }
+}
+
+inline flatbuffers::Offset<void> DataUnion::Pack(flatbuffers::FlatBufferBuilder &_fbb, const flatbuffers::rehasher_function_t *rehasher) const {
+  switch (type) {
+    case Data_NONE: return 0;
+    case Data_LogEntry: return CreateLogEntry(_fbb, reinterpret_cast<const LogEntryT *>(table), rehasher).Union();
+    case Data_GameInfoBroadcast: return CreateGameInfoBroadcast(_fbb, reinterpret_cast<const GameInfoBroadcastT *>(table), rehasher).Union();
+    case Data_GameServerLogInterval: return CreateGameServerLogInterval(_fbb, reinterpret_cast<const GameServerLogIntervalT *>(table), rehasher).Union();
+    default: return 0;
+  }
+}
+
+inline void DataUnion::Reset() {
+  switch (type) {
+    case Data_LogEntry: delete reinterpret_cast<LogEntryT *>(table); break;
+    case Data_GameInfoBroadcast: delete reinterpret_cast<GameInfoBroadcastT *>(table); break;
+    case Data_GameServerLogInterval: delete reinterpret_cast<GameServerLogIntervalT *>(table); break;
+    default: break;
+  }
+  table = nullptr;
+  type = Data_NONE;
+}
+
 inline const fts::Message *GetMessage(const void *buf) {
   return flatbuffers::GetRoot<fts::Message>(buf);
+}
+
+inline Message *GetMutableMessage(void *buf) {
+  return flatbuffers::GetMutableRoot<Message>(buf);
 }
 
 inline bool VerifyMessageBuffer(flatbuffers::Verifier &verifier) {
@@ -249,6 +458,10 @@ inline bool VerifyMessageBuffer(flatbuffers::Verifier &verifier) {
 
 inline void FinishMessageBuffer(flatbuffers::FlatBufferBuilder &fbb, flatbuffers::Offset<fts::Message> root) {
   fbb.Finish(root);
+}
+
+inline std::unique_ptr<MessageT> UnPackMessage(const void *buf, const flatbuffers::resolver_function_t *resolver = nullptr) {
+  return std::unique_ptr<MessageT>(GetMessage(buf)->UnPack(resolver));
 }
 
 }  // namespace fts

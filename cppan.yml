@@ -1,0 +1,53 @@
+projects:
+    example_game:
+        root_directory: code/example_game
+        dependencies:
+            - net
+
+    net:
+        type: lib
+        static_only: true
+
+        files:
+            - code/net/.*
+            - code/protocol/.*
+
+        include_directories:
+            - code
+
+        options:
+            any:
+                definitions:
+                    win32:
+                        public:
+                            - FTS_WINDOWS
+
+        dependencies:
+            - pvt.cppan.demo.chriskohlhoff.asio: 1
+            - pvt.cppan.demo.google.flatbuffers.flatbuffers: 1
+            - pvt.cppan.demo.google.flatbuffers.flatc: 1
+
+        post_sources: |
+            function(compile_flatbuffers_schema_to_cpp SRC_FBS)
+              string(REGEX REPLACE "\\.fbs$" "_generated.h" GEN_HEADER ${SRC_FBS})
+              add_custom_command(
+                OUTPUT ${GEN_HEADER}
+                COMMAND pvt.cppan.demo.google.flatbuffers.flatc -c --no-includes --gen-mutable
+                        --gen-object-api -o "${SDIR}"
+                        "${SRC_FBS}"
+                DEPENDS pvt.cppan.demo.google.flatbuffers.flatc)
+            endfunction()
+
+            compile_flatbuffers_schema_to_cpp(${SDIR}/code/protocol/protocol.fbs)
+            set(src ${src} ${SDIR}/code/protocol/protocol_generated.h)
+
+    fts_remote_console:
+        files:
+            - code/remote_console/.*
+            - code/lib_fts/.*
+        include_directories:
+            - code
+        dependencies:
+            - net
+            - pvt.cppan.demo.ocornut.imgui: master
+            - pvt.cppan.demo.glfw: 3

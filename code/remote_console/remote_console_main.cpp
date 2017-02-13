@@ -23,9 +23,8 @@
 
 // thirdparty libs
 #include <imgui.h>
-#include <asio/asio.hpp>
+#include <asio.hpp>
 #include <GLFW/glfw3.h>
-#include <asio/asio.hpp>
 
 // lang
 #include <stdio.h>

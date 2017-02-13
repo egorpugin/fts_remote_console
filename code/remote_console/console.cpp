@@ -208,7 +208,7 @@ void Console::Draw(GameConnection & connection, ImVec2 pos, ImVec2 size)
             ImGui::SameLine();
             if (ImGui::SliderFloat("", &_logInterval, .1f, 3.f, "%1.1f")) {
                 auto rate = fts::CreateGameServerLogInterval(fbb, _logInterval);
-                auto fbbMsg = fts::CreateMessage(fbb, fts::Data::GameServerLogInterval, rate.o);
+                auto fbbMsg = fts::CreateMessage(fbb, fts::Data_GameServerLogInterval, rate.o);
                 fbb.Finish(fbbMsg);
 
                 fts::ProtocolMessage protoMsg(fbb.GetBufferPointer(), fbb.GetSize());

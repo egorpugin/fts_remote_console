@@ -18,7 +18,7 @@
 #include <lib_fts/fts_sleep.h>
 
 // thirdparty libs
-#include <asio/asio.hpp>
+#include <asio.hpp>
 #include <flatbuffers/flatbuffers.h>
 
 // lang
@@ -88,7 +88,7 @@ int main() {
             auto log_msg = random_log() + " " + random_log() + " " + random_log();
             auto logEntryMsg = fbb.CreateString(log_msg);
             auto entry = fts::CreateLogEntry(fbb, (float)stopwatch.elapsedMilliseconds(), type, logEntryMsg);
-            auto fbbMsg = fts::CreateMessage(fbb, fts::Data::LogEntry, entry.o);
+            auto fbbMsg = fts::CreateMessage(fbb, fts::Data_LogEntry, entry.o);
             fbb.Finish(fbbMsg);
 
             // Send log entry
@@ -106,7 +106,7 @@ int main() {
             auto ipaddr = fbb.CreateString(local_ipaddr);
             auto fbb_hostname = fbb.CreateString(std::string(hostname.data()));
             auto broadcast = fts::CreateGameInfoBroadcast(fbb, ipaddr, server.openPort(), fbb_hostname, fts::GetProcessId());
-            auto fbbMsg = fts::CreateMessage(fbb, fts::Data::GameInfoBroadcast, broadcast.o);
+            auto fbbMsg = fts::CreateMessage(fbb, fts::Data_GameInfoBroadcast, broadcast.o);
             fbb.Finish(fbbMsg);
 
             // Send broadcast info

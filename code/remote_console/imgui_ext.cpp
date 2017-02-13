@@ -14,8 +14,8 @@
 #include <lib_fts/fts_fuzzy_match.h>
 
 // thirdparty libs
-#include <imgui/imgui.h>
-#include <imgui/imgui_internal.h>
+#include <imgui.h>
+#include <imgui_internal.h>
 
 // lang
 #include <cstdlib>
@@ -48,6 +48,13 @@ int EntryCompareId(void const * _a, void const * _b)
         return 0;
     else
         return 1;
+}
+
+void ImStrncpy(char* dst, const char* src, int count)
+{
+    if (count < 1) return;
+    strncpy(dst, src, (size_t)count);
+    dst[count - 1] = 0;
 }
 
 

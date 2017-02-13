@@ -12,7 +12,7 @@
 #define FTS_TCP_CLIENT_H
 
 // thirdparty
-#include <asio/asio.hpp>
+#include <asio.hpp>
 
 // lang
 #include <string>
